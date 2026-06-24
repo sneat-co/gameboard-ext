@@ -51,5 +51,25 @@ jobs:
       - name: Compile TypeSpec
         working-directory: typespec
         run: |
-          pnpm install
-          pnpm run build
+          pnpm install --ignore-scripts
+          node node_modules/@typespec/compiler/cmd/tsp.js compile .
+
+  frontend:
+    name: TS contract reducer + Go↔TS parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pnpm
+        run: npm i -g pnpm
+      - name: Install (no build scripts — esbuild binary ships prebuilt)
+        working-directory: frontend
+        run: pnpm install --ignore-scripts
+      - name: Typecheck
+        working-directory: frontend
+        run: node node_modules/typescript/bin/tsc --noEmit
+      - name: Test (incl. parity.json oracle shared with the Go reducer)
+        working-directory: frontend
+        run: node node_modules/vitest/vitest.mjs run
