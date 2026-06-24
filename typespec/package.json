@@ -1,0 +1,13 @@
+{
+  "name": "gameboard-typespec",
+  "private": true,
+  "version": "0.0.0",
+  "description": "TypeSpec definitions of the GameBoard HTTP/JSON API — the frozen wire contract that the gameboard backend (Go) and the @sneat/extension-gameboard-* libs implement against. No emitters are configured; the .tsp files are the source of truth for the wire shape only (same convention as eventus/typespec and sneat-go/typespec).",
+  "scripts": {
+    "build": "tsp compile ."
+  },
+  "dependencies": {
+    "@typespec/compiler": "^1.13.0",
+    "@typespec/http": "^1.13.0"
+  }
+}

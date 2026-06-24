@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, integration/gameboard-mvp]
+  pull_request:
+
+jobs:
+  invariant:
+    name: zero-other-extension-deps invariant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - name: Enforce no-other-extension dependency
+        run: bash scripts/check-no-extension-deps.sh
+
+  backend:
+    name: backend build + test (event-timeline ~100% coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - name: Build
+        working-directory: backend
+        run: go build ./...
+      - name: Test with coverage
+        working-directory: backend
+        run: go test ./... -covermode=set -coverprofile=cover.out
+      - name: Enforce event-timeline coverage floor (~100%)
+        working-directory: backend
+        run: |
+          pct=$(go tool cover -func=cover.out | awk '/eventtimeline/ && /total|Fold|Order/ {next} END {}' ; go tool cover -func=cover.out | grep '^total:' | grep -oE '[0-9.]+%' | tr -d '%')
+          echo "total coverage: ${pct}%"
+          awk -v p="$pct" 'BEGIN{ if (p+0 < 99.0) { print "coverage below 99% floor"; exit 1 } }'
+
+  typespec:
+    name: typespec compile (frozen wire contract)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pnpm
+        run: npm i -g pnpm
+      - name: Compile TypeSpec
+        working-directory: typespec
+        run: |
+          pnpm install
+          pnpm run build
